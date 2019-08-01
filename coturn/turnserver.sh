@@ -15,12 +15,12 @@ if [ $NAT = "true" -a -z "$EXTERNAL_IP" ]; then
   echo "Starting turn server with external IP: $EXTERNAL_IP"
 fi
 
-echo 'min-port=49152' > /etc/turnserver.conf
-echo 'max-port=65535' >> /etc/turnserver.conf
-echo 'fingerprint' >> /etc/turnserver.conf
-echo 'lt-cred-mech' >> /etc/turnserver.conf
+echo "min-port=$MIN_PORT" > /etc/turnserver.conf
+echo "max-port=$MAX_PORT" >> /etc/turnserver.conf
+echo "fingerprint" >> /etc/turnserver.conf
+echo "lt-cred-mech" >> /etc/turnserver.conf
 echo "realm=$REALM" >> /etc/turnserver.conf
-echo 'log-file stdout' >> /etc/turnserver.conf
+echo "log-file stdout" >> /etc/turnserver.conf
 echo "user=$TURN_USERNAME:$TURN_PASSWORD" >> /etc/turnserver.conf
 [ $NAT = "true" ] && echo "external-ip=$EXTERNAL_IP" >> /etc/turnserver.conf
 

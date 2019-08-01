@@ -1,0 +1,31 @@
+version: '3'
+services:
+  ksm:
+    image: kurento/kurento-media-server:6.10.0
+    container_name: kms
+    ports:
+    - 8888:8888
+    environment:
+    # see https://github.com/Kurento/kurento-docker/blob/master/kurento-media-server/entrypoint.sh#L13
+    # see https://docs.docker.com/compose/environment-variables/
+    - KMS_TURN_URL=kurento:kurento@${COTURN_PUBLIC_IP}:3478
+  front:
+    build: kurento-tutorial-node/
+    container_name: front
+    ports:
+    - 8443:8443/tcp
+    command: ["--", "--ws_uri=ws://kms:8888/kurento"]
+  coturn:
+    build: coturn/
+    container_name: coturn
+    expose:
+    - 3478/udp
+    - 49152-65535/udp
+    environment:
+    - TURN_USERNAME=kurento
+    - TURN_PASSWORD=kurento
+    - REALM=kurento.org
+    - NAT=true
+    - MIN_PORT=49152
+    - MAX_PORT=65535
+    network_mode: "host"

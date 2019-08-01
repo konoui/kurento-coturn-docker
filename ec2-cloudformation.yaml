@@ -1,0 +1,82 @@
+AWSTemplateFormatVersion: 2010-09-09
+Parameters:
+  LatestAmiId:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: "/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2"
+  InstanceType: 
+    Description: EC2 instance type
+    Type: String
+    Default: t2.large
+  KeyName:
+    Description: EC2 key pair
+    Type: AWS::EC2::KeyPair::KeyName
+    Default: home_id_rsa
+  SSHLocation:
+    Description: The IP address range that can be used to SSH to the EC2 instances
+    Type: String
+    MinLength: '9'
+    MaxLength: '18'
+    Default: 0.0.0.0/0
+    AllowedPattern: "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})"
+    ConstraintDescription: must be a valid IP CIDR range of the form x.x.x.x/x.
+
+Resources:
+  Instance:
+    Type : AWS::EC2::Instance
+    Properties:
+      ImageId: !Ref LatestAmiId
+      KeyName: !Ref KeyName
+      SecurityGroups:
+      - !Ref SecurityGroup
+      Tags:
+      - Key: Name
+        Value: !Ref AWS::StackName
+      UserData:
+        "Fn::Base64": 
+          !Sub |
+            #!/bin/bash -xe
+            yum install -y git jq
+            amazon-linux-extras install -y docker
+            systemctl enable docker
+            systemctl start  docker
+            usermod -a -G docker ec2-user
+            curl -L https://github.com/docker/compose/releases/download/1.24.1/docker-compose-`uname -s`-`uname -m` -o /usr/local/bin/docker-compose
+            chmod +x /usr/local/bin/docker-compose
+            git clone https://github.com/konoui/kurento-coturn-docker.git
+            git checkout feature/kurento-tutorial
+            cd kurento-coturn-docker
+            export COTURN_PUBLIC_IP=$(curl http://169.254.169.254/latest/meta-data/public-ipv4)
+            docker-compose up -d
+            yum install -y aws-cfn-bootstrap
+            /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource Instance --region ${AWS::Region}
+    CreationPolicy:
+      ResourceSignal:
+        Timeout: PT10M
+        Count: 1
+
+  SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Sub "SecurityGroup ${AWS::StackName}"
+      GroupDescription: "Full Open + SSH access from specific location"
+      SecurityGroupIngress:
+      - CidrIp: 0.0.0.0/0
+        FromPort: '8888'
+        ToPort: '8888'
+        IpProtocol: tcp
+      - CidrIp: 0.0.0.0/0
+        FromPort: '3443'
+        ToPort: '3443'
+        IpProtocol: tcp
+      - CidrIp: 0.0.0.0/0
+        FromPort: '3478'
+        ToPort: '3478'
+        IpProtocol: tcp
+      - CidrIp: 0.0.0.0/0
+        FromPort: '0'
+        ToPort: '65535'
+        IpProtocol: udp
+      - CidrIp: !Ref SSHLocation
+        FromPort: '22'
+        IpProtocol: tcp
+        ToPort: '22'
