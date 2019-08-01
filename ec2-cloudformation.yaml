@@ -43,8 +43,8 @@ Resources:
             curl -L https://github.com/docker/compose/releases/download/1.24.1/docker-compose-`uname -s`-`uname -m` -o /usr/local/bin/docker-compose
             chmod +x /usr/local/bin/docker-compose
             git clone https://github.com/konoui/kurento-coturn-docker.git
-            git checkout feature/kurento-tutorial
             cd kurento-coturn-docker
+            git checkout feature/kurento-tutorial
             export COTURN_PUBLIC_IP=$(curl http://169.254.169.254/latest/meta-data/public-ipv4)
             docker-compose up -d
             yum install -y aws-cfn-bootstrap
@@ -57,7 +57,7 @@ Resources:
   SecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupName: !Sub "SecurityGroup ${AWS::StackName}"
+      GroupName: !Sub "SecurityGroup for ${AWS::StackName}"
       GroupDescription: "Full Open + SSH access from specific location"
       SecurityGroupIngress:
       - CidrIp: 0.0.0.0/0
@@ -65,15 +65,15 @@ Resources:
         ToPort: '8888'
         IpProtocol: tcp
       - CidrIp: 0.0.0.0/0
-        FromPort: '3443'
-        ToPort: '3443'
+        FromPort: '8443'
+        ToPort: '8443'
         IpProtocol: tcp
       - CidrIp: 0.0.0.0/0
         FromPort: '3478'
         ToPort: '3478'
-        IpProtocol: tcp
+        IpProtocol: udp
       - CidrIp: 0.0.0.0/0
-        FromPort: '0'
+        FromPort: '49152'
         ToPort: '65535'
         IpProtocol: udp
       - CidrIp: !Ref SSHLocation
